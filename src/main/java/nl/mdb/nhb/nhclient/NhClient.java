@@ -2,10 +2,7 @@ package nl.mdb.nhb.nhclient;
 
 import java.math.BigDecimal;
 
-import nl.mdb.nhb.nhclient.io.Algo;
-import nl.mdb.nhb.nhclient.io.BuyInfo;
-import nl.mdb.nhb.nhclient.io.Location;
-import nl.mdb.nhb.nhclient.io.Message;
+import nl.mdb.nhb.nhclient.io.*;
 import nl.mdb.nhb.nhclient.io.Order.Orders;
 
 public interface NhClient {
@@ -21,4 +18,8 @@ public interface NhClient {
 	Message setPrice(Location location, Algo algo, Long orderId, BigDecimal price);
 	
 	Message decreasePrice(Location location, Algo algo, Long orderId);
+
+	Balance getBalance();
+
+	Message refill(Location location, Algo algo, Long orderId, BigDecimal amount);
 }

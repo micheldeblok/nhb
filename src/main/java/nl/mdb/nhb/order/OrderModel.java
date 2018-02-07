@@ -42,6 +42,9 @@ public class OrderModel {
 	
 	@Getter
 	private List<Order> myOrders = new ArrayList<>();
+
+	@Getter
+	private BigDecimal balance;
 	
 	@SneakyThrows
 	public void initialize() {
@@ -49,6 +52,11 @@ public class OrderModel {
 		loadAlgorithm();
 		loadOrders();
 		loadMyOrders();
+		loadBalance();
+	}
+
+	private void loadBalance() {
+		this.balance = client.getBalance().getBalance_confirmed();
 	}
 
 	public OrderStatistics getStatistics() {
@@ -78,6 +86,10 @@ public class OrderModel {
 		return client.decreasePrice(getLocation(), getAlgo(), orderId);
 	}
 
+	public Message refill(Long orderId, BigDecimal amount) {
+		return client.refill(getLocation(), getAlgo(), orderId, amount);
+	}
+
 	private void loadAlgorithm() {
 		BuyInfo bi = client.getBuyInfo();
 		Optional<Algorithm> oa = Arrays.asList(bi.getAlgorithms()).stream()
@@ -87,8 +99,6 @@ public class OrderModel {
 			throw new RuntimeException("No Algorithm found in buy info for: " + getAlgo());
 		}
 		this.algorithm = oa.get();
-		// Stick to SLA
-		sleep(3);
 	}
 	
 	private void loadOrders() {
@@ -99,16 +109,12 @@ public class OrderModel {
 		orders.sort((o1, o2) -> {
 			return o1.getPrice().compareTo(o2.getPrice());
 		});
-		// Stick to SLA
-		sleep(3);
 	}
 	
 	private void loadMyOrders() {
 		Orders o = client.getMyOrders(getLocation(), getAlgo());
 		myOrders.clear();
 		myOrders.addAll(Arrays.asList(o.getOrders()));
-		// Stick to SLA
-		sleep(3);
 	}
 
 	private Algo getAlgo() {
@@ -117,10 +123,5 @@ public class OrderModel {
 
 	private Location getLocation() {
 		return Location.valueOf(config.getLocation());
-	}
-
-	@SneakyThrows
-	private void sleep(int seconds) {
-		Thread.sleep(seconds * 1000);
 	}
 }
