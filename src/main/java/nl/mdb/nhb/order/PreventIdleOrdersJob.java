@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.mdb.nhb.nhclient.io.Message;
 import nl.mdb.nhb.nhclient.io.Order;
 
 @Slf4j
@@ -32,7 +33,12 @@ public class PreventIdleOrdersJob implements Runnable {
 			if ((o.getWorkers() == null || o.getWorkers().intValue() == 0) && o.getPrice().compareTo(lowest) < 0) {
 				BigDecimal newPrice = lowest.add(new BigDecimal("0.0001"));
 				log.warn("- Order #{} with price={} is too low. Raising price to: {}", o.getId(), o.getPrice(), newPrice);
-				log.info("  result: " + model.setPrice(o.getId(), newPrice));
+				Message m = model.setPrice(o.getId(), newPrice);
+				if (m.getSuccess() != null) {
+					log.info("  success: " + m.getSuccess());
+				} else {
+					log.error("  error: " + m.getError());
+				}
 			} else {
 				log.info("- Order #{} with price={} is OK!", o.getId(), o.getPrice());
 			}

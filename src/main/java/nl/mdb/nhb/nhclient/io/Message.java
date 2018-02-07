@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class Message {
 
+	private String error;
+	
 	private String success;
 	
 	public static class MessageResponse extends AbstractResponse<Message> {}

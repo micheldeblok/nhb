@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.mdb.nhb.nhclient.io.Message;
 import nl.mdb.nhb.nhclient.io.Order;
 
 @Slf4j
@@ -30,7 +31,12 @@ public class LowerOrderPriceJob implements Runnable {
 		for (Order o: model.getMyOrders()) {
 			if (o.getPrice().subtract(maxDown).compareTo(lowest) > 0) {
 				log.warn("Order #{} with price={} is too expensive: lowest is {} so lowering price..", o.getId(), o.getPrice(), lowest);
-				log.info("result: " + model.decreasePrice(o.getId()));
+				Message m = model.decreasePrice(o.getId());
+				if (m.getSuccess() != null) {
+					log.info("- success: " + m.getSuccess());
+				} else {
+					log.error("- error: " + m.getError());
+				}
 			} else {
 				log.info("Order #{} with price={} is OK!", o.getId(), o.getPrice());
 			}

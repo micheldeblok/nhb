@@ -70,14 +70,12 @@ public class OrderModel {
 		return result;
 	}
 
-	public String setPrice(Long orderId, BigDecimal price) {
-		Message m = client.setPrice(getLocation(), getAlgo(), orderId, price);
-		return m.getSuccess();
+	public Message setPrice(Long orderId, BigDecimal price) {
+		return client.setPrice(getLocation(), getAlgo(), orderId, price);
 	}
 
-	public String decreasePrice(Long orderId) {
-		Message m = client.decreasePrice(getLocation(), getAlgo(), orderId);
-		return m.getSuccess();
+	public Message decreasePrice(Long orderId) {
+		return client.decreasePrice(getLocation(), getAlgo(), orderId);
 	}
 
 	private void loadAlgorithm() {
