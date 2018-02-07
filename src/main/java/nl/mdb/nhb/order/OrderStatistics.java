@@ -16,6 +16,4 @@ public class OrderStatistics {
 	private BigDecimal highestWorkingPrice;
 	
 	private BigDecimal maxPriceDown;
-
-	private BigDecimal balance;
 }
