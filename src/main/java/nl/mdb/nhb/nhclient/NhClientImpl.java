@@ -29,7 +29,7 @@ class NhClientImpl implements NhClient {
 	public NhClientImpl(RestTemplateBuilder builder) {
 		this.restTemplate = builder.additionalMessageConverters(new MessageConverter()).build();
 	}
-	
+
 	@Override
 	public String getApiVersion() {
 		sleep();
@@ -66,6 +66,17 @@ class NhClientImpl implements NhClient {
 	    ResponseEntity<OrdersResponse> response = restTemplate.getForEntity(url, OrdersResponse.class);
 	    handleFault("getMyOrders", response);
 	    return response.getBody().getResult();
+	}
+
+	@Override
+	public Message setLimit(Location location, Algo algo, Long orderId, BigDecimal limit) {
+		sleep();
+		String url = config.getBaseUrl() + "?method=orders.set.limit&id=" + config.getApiId()
+				+ "&key=" + config.getApiKey() + "&location=" + location.getCode()
+				+ "&algo=" + algo.getCode() + "&order=" + orderId + "&limit=" + limit;
+		ResponseEntity<MessageResponse> response = restTemplate.getForEntity(url, MessageResponse.class);
+		handleFault("setLimit", response);
+		return response.getBody().getResult();
 	}
 
 	@Override

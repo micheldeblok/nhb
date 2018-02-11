@@ -26,7 +26,23 @@ public class NhbConfiguration {
 
 	private BigDecimal priceMargin;
 
+	private BigDecimal minPrice;
+
 	private BigDecimal maxPrice;
 
+	private BigDecimal maxPriceDown = new BigDecimal("0.0010");
+
 	private BigDecimal refillBalanceThreshold;
+
+	private boolean lowerOrdersEnabled = false;
+
+	private boolean checkOrdersEnabled = false;
+
+	private String spUrl;
+
+	private BigDecimal speedMin;
+
+	private BigDecimal speedMax;
+
+	private Integer runningIdleMinutes = 90;
 }

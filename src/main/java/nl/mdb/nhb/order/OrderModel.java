@@ -5,8 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import nl.mdb.nhb.spclient.SpClient;
+import nl.mdb.nhb.spclient.SpStatistics;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,14 +32,19 @@ import nl.mdb.nhb.nhclient.io.OrderType;
 @Component
 public class OrderModel {
 
+	private Pattern DURATION = Pattern.compile("(\\d\\d):(\\d\\d):(\\d\\d)");
+
 	@Autowired
 	private NhbConfiguration config;
 	
 	@Autowired
 	private NhClient client;
+
+	@Autowired
+	private SpClient spClient;
 	
 	@Getter
-	private Algorithm algorithm;
+	private BigDecimal maxPriceDown;
 	
 	@Getter
 	private List<Order> orders = new ArrayList<>();
@@ -45,18 +54,32 @@ public class OrderModel {
 
 	@Getter
 	private BigDecimal balance;
+
+	@Getter
+	private Integer runningMinutes;
 	
 	@SneakyThrows
 	public void initialize() {
 		log.debug("Initializing OrderModel..");
-		loadAlgorithm();
+		loadMaxPriceDown();
 		loadOrders();
 		loadMyOrders();
 		loadBalance();
+		loadRunningMinutes();
 	}
 
 	private void loadBalance() {
 		this.balance = client.getBalance().getBalance_confirmed();
+	}
+
+	private void loadRunningMinutes() {
+		SpStatistics stats = spClient.getStatistics();
+		Matcher matcher = DURATION.matcher(stats.getRound_duration());
+		if (matcher.matches() && matcher.groupCount() == 3) {
+			this.runningMinutes = (Integer.parseInt(matcher.group(1)) * 60) + Integer.parseInt(matcher.group(2));
+		} else {
+			log.warn("Unable to parse duration: {}", stats.getRound_duration());
+		}
 	}
 
 	public OrderStatistics getStatistics() {
@@ -74,8 +97,12 @@ public class OrderModel {
 		result.setNumberOfWorkingOrders(workingOrders.size());
 		result.setLowestWorkingPrice(workingOrders.get(0).getPrice());
 		result.setHighestWorkingPrice(workingOrders.get(workingOrders.size() - 1).getPrice());
-		result.setMaxPriceDown(algorithm.getDown_step().abs());
+		result.setMaxPriceDown(this.maxPriceDown);
 		return result;
+	}
+
+	public Message setLimit(Long orderId, BigDecimal limit) {
+		return client.setLimit(getLocation(), getAlgo(), orderId, limit);
 	}
 
 	public Message setPrice(Long orderId, BigDecimal price) {
@@ -90,7 +117,21 @@ public class OrderModel {
 		return client.refill(getLocation(), getAlgo(), orderId, amount);
 	}
 
-	private void loadAlgorithm() {
+	public Integer getRunningMinutes() {
+		return this.runningMinutes;
+	}
+
+	public boolean isRunningIdle() {
+		return config.getRunningIdleMinutes() != null && this.runningMinutes != null
+				&& this.runningMinutes > config.getRunningIdleMinutes();
+	}
+
+	private void loadMaxPriceDown() {
+		if (config.getMaxPriceDown() !=  null && config.getMaxPriceDown().compareTo(BigDecimal.ZERO) >= 0) {
+			this.maxPriceDown = config.getMaxPriceDown();
+			return;
+		}
+		// Not specified? Then obtain from API call:
 		BuyInfo bi = client.getBuyInfo();
 		Optional<Algorithm> oa = Arrays.asList(bi.getAlgorithms()).stream()
 			.filter(a -> a.getAlgo() == getAlgo().getCode())
@@ -98,7 +139,7 @@ public class OrderModel {
 		if (!oa.isPresent()) {
 			throw new RuntimeException("No Algorithm found in buy info for: " + getAlgo());
 		}
-		this.algorithm = oa.get();
+		this.maxPriceDown = oa.get().getDown_step().abs();
 	}
 	
 	private void loadOrders() {

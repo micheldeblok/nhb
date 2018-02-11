@@ -22,4 +22,6 @@ public interface NhClient {
 	Balance getBalance();
 
 	Message refill(Location location, Algo algo, Long orderId, BigDecimal amount);
+
+	Message setLimit(Location location, Algo algo, Long orderId, BigDecimal limit);
 }
